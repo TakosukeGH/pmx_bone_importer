@@ -19,6 +19,7 @@ class ImportPMXBones(bpy.types.Operator, ImportHelper):
     def execute(self, context):
         pmx = structs.pmx_to_struct(self.filepath)
         self.pmx_to_armature(pmx)
+        self.setting_pose_bones(pmx)
         print("end")
         return {"FINISHED"}
 
@@ -35,8 +36,10 @@ class ImportPMXBones(bpy.types.Operator, ImportHelper):
                 continue
 
             bone = amt.data.edit_bones.new(pmx_bone.name)
+            pmx_bone.blender_bone_name = bone.name
             bone.head = pmx_bone.location.to_blender_vec()
 
+            # ボーンフラグ設定反映
             if pmx_bone.select_bone_index: # 接続先(PMD子ボーン指定)表示方法:ボーンで指定
                 target_bone = pmx.bones[pmx_bone.target_bone_index.index]
                 bone.tail = target_bone.location.to_blender_vec()
@@ -44,6 +47,29 @@ class ImportPMXBones(bpy.types.Operator, ImportHelper):
                 bone.tail = bone.head + pmx_bone.bone_coordinate_offset.to_blender_vec()
 
         bpy.ops.object.mode_set(mode='OBJECT')
+
+    def setting_pose_bones(self, pmx):
+        bpy.ops.object.mode_set(mode='POSE')
+        bones = bpy.context.object.pose.bones
+
+        for pmx_bone in pmx.bones:
+            bone = bones[pmx_bone.blender_bone_name]
+
+            if not pmx_bone.rotateable:
+                bone.lock_rotation = (True, True, True)
+                bone.lock_rotation_w = True
+
+            if not pmx_bone.movable:
+                bone.lock_location = (True, True, True)
+
+            if not pmx_bone.view:
+                bone.bone.hide = True
+                bone.bone.layers = self.bone_layers(31)
+
+    def bone_layers(self, layer):
+        layers = [False] * 32
+        layers[layer % 32] = True
+        return layers
 
 def menu_func_import(self, context):
     self.layout.operator(ImportPMXBones.bl_idname, text="PMX Bones (.pmx)")
