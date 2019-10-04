@@ -263,6 +263,9 @@ class Bone:
         self.unit_angle = Float()
         self.link_count = Int32()
 
+        # blender
+        self.blender_bone_name = ""
+
     def read_bone_flag(self, f):
             bone_flag = BoneFlag()
             f.readinto(bone_flag)
