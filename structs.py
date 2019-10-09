@@ -21,6 +21,9 @@ P2B_MAT = mathutils.Matrix([
     [0.0, 1.0, 0.0, 0.0],
     [0.0, 0.0, 0.0, 1.0]])
 
+ZERO_VEC = mathutils.Vector((0.0, 0.0, 0.0))
+UNIT_VEC = mathutils.Vector((0.0, 0.0, 0.1))
+
 def pmx_to_struct(filepath):
     pmx = PMX(filepath)
     pmx.read_pmx()
@@ -156,8 +159,12 @@ class PMX:
 
             if bone.select_bone_index: # 接続先(PMD子ボーン指定)表示方法:ボーンで指定
                 f.readinto(bone.target_bone_index)
+                if bone.target_bone_index.index < 0:
+                    bone.is_empty_bone = True
             else: # 接続先(PMD子ボーン指定)表示方法:座標オフセットで指定
                 f.readinto(bone.bone_coordinate_offset)
+                if bone.bone_coordinate_offset.to_blender_vec() == ZERO_VEC:
+                    bone.is_empty_bone = True
 
             if bone.rotateable: # 回転可能
                 pass
@@ -265,6 +272,7 @@ class Bone:
 
         # blender
         self.blender_bone_name = ""
+        self.is_empty_bone = False
 
     def read_bone_flag(self, f):
             bone_flag = BoneFlag()
